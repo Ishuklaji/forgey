@@ -6,7 +6,7 @@ const WorkspaceClient = () => {
 
           {/* Workspace — visible only on md+ screens */}
           {/* chat panel */}
-      <div className="hidden md:flex h-[calc(100vh-3.5rem)] overflow-hidden "></div>
+      <div className="hidden md:flex h-[calc(100vh-3.5rem)] "></div>
       
     </div>
   );
