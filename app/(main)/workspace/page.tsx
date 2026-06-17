@@ -1,6 +1,7 @@
 // import { WorkspaceClient } from "@/components/WorkspaceClient";
 // import { getWorkspaceUser, getWorkspaceById } from "@/actions/workspace";
 
+import WorkspaceClient from "@/components/WorkspaceClient";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
