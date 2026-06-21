@@ -237,7 +237,7 @@ export function CodePanel({
 
   // Key only on file path set — NOT on file contents.
   // Content changes go through sandpack.updateFile() inside SandpackInner.
-  // This prevents Sandpack from remounting when only code changes.
+  // This prevents Sandpack from remounting when only the code changes.
   const filePathKey = Object.keys(files).sort().join("|");
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
