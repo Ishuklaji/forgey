@@ -1,9 +1,5 @@
-// import { WorkspaceClient } from "@/components/WorkspaceClient";
-// import { getWorkspaceUser, getWorkspaceById } from "@/actions/workspace";
-
-import WorkspaceClient from "@/components/WorkspaceClient";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { getWorkspaceById, getWorkspaceUser } from "@/actions/workspace";
+import { WorkspaceClient } from "@/components/WorkspaceClient";
 
 interface WorkspacePageProps {
   searchParams: Promise<{ prompt?: string; id?: string }>;
@@ -12,20 +8,13 @@ interface WorkspacePageProps {
 export default async function WorkspacePage({
   searchParams,
 }: WorkspacePageProps) {
-
-  const { userId } = await auth();
-
-  if (!userId) {
-    redirect("/sign-in");
-  }
-
   const { prompt, id } = await searchParams;
 
-//   const user = await getWorkspaceUser();
+  const user = await getWorkspaceUser();
 
   let workspace = null;
   if (id) {
-    // workspace = await getWorkspaceById(id, user.id);
+    workspace = await getWorkspaceById(id, user.id);
   }
 
   return (

@@ -19,7 +19,7 @@ import {
   Loader2,
   ArrowUp,
 } from "lucide-react";
-import { RingLoader } from "react-spinners";
+// import { RingLoader } from "react-spinners";
 import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
