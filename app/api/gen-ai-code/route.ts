@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
   // }
 
   const user = await db.user.findUnique({
-    where: { id: userId, clerkId },
+    where: { clerkId },
     select: { id: true, credits: true },
   });
 
@@ -278,28 +278,34 @@ export async function POST(request: NextRequest) {
             { role: "assistant", content: assistantMessage },
           ];
 
-          const [workspace] = await db.$transaction([
-            workspaceId
-              ? db.workspace.update({
-                  where: { id: workspaceId, userId },
-                  data: {
-                    messages: updatedMessages as never,
-                    fileData: newFileData as never,
-                  },
-                })
-              : db.workspace.create({
-                  data: {
-                    userId,
-                    title: aiTitle ?? lastUserMessage.content.slice(0, 80),
-                    messages: updatedMessages as never,
-                    fileData: newFileData as never,
-                  },
-                }),
-            db.user.update({
-              where: { id: userId },
-              data: { credits: { decrement: CREDIT_COST_PER_GENERATION } },
-            }),
-          ]);
+          const workspace = await db.$transaction(
+            async (tx) => {
+              const workspace = workspaceId
+                ? await tx.workspace.update({
+                    where: { id: workspaceId, userId },
+                    data: {
+                      messages: updatedMessages as never,
+                      fileData: newFileData as never,
+                    },
+                  })
+                : await tx.workspace.create({
+                    data: {
+                      userId,
+                      title: aiTitle ?? lastUserMessage.content.slice(0, 80),
+                      messages: updatedMessages as never,
+                      fileData: newFileData as never,
+                    },
+                  });
+
+              await tx.user.update({
+                where: { id: userId },
+                data: { credits: { decrement: CREDIT_COST_PER_GENERATION } },
+              });
+
+              return workspace;
+            },
+            { timeout: 200000 },
+          );
 
           const updatedUser = await db.user.findUnique({
             where: { id: userId },
@@ -331,7 +337,7 @@ export async function POST(request: NextRequest) {
       }
     },
   });
-  
+
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
