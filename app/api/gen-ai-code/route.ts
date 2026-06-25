@@ -19,7 +19,7 @@ function sseEvent(type: string, payload: unknown): string {
 // We extract that. If no bold heading, take the first sentence only.
 
 function extractThoughtLabel(text: string): string | null {
-  // Try to grab **bold heading** at the start
+  // Try to grab **bold heading** at the starting
   const boldMatch = text.match(/\*\*([^*]{4,60})\*\*/);
   if (boldMatch) return boldMatch[1].trim();
 
