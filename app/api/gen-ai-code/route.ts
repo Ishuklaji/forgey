@@ -14,7 +14,7 @@ function sseEvent(type: string, payload: unknown): string {
   return `data: ${JSON.stringify({ type, ...(payload as object) })}\n\n`;
 }
 
-// ─── Extract short label from a Gemini thought chunk ─────────────────────────
+// ─── Extract short label from a Gemini Ai thought chunk ─────────────────────────
 // Gemini thoughts often start with a bold heading like **Verify Config**
 // We extract that. If no bold heading, take the first sentence only.
 
