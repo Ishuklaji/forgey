@@ -1,4 +1,6 @@
+// WorkspaceClient.tsx
 "use client";
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ChatPanel } from "./ChatPanel";
 import { CodePanel } from "./CodePanel";
@@ -42,14 +44,6 @@ function parseFileData(raw: unknown): FileData | null {
   return raw as FileData;
 }
 
-interface WorkspaceClientProps {
-  initialPrompt: string | null;
-  workspace: WorkspaceData | null;
-  userCredits: number;
-  userId: string;
-  userPlan: string;
-}
-
 export function WorkspaceClient({
   initialPrompt,
   workspace,
@@ -66,7 +60,6 @@ export function WorkspaceClient({
   const [fileData, setFileData] = useState<FileData | null>(
     parseFileData(workspace?.fileData),
   );
-
   const [credits, setCredits] = useState(userCredits);
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusLog, setStatusLog] = useState<StatusStep[]>([]);
@@ -110,10 +103,6 @@ export function WorkspaceClient({
       ),
     );
   };
-
-  const handleFilePatch = useCallback((patches: FileData) => {
-    setFileData(patches);
-  }, []);
 
   const handleGenerate = useCallback(
     async (prompt: string, imageUrl?: string) => {
@@ -356,42 +345,49 @@ export function WorkspaceClient({
     improveAbortRef.current?.abort();
   }, []);
 
-  return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-[#0a0a0a]">
-      {/* chat panel - left */}
-      <ChatPanel
-        isImproving={isImproving}
-        messages={messages}
-        isGenerating={isGenerating}
-        statusLog={statusLog}
-        credits={credits}
-        initialPrompt={initialPrompt}
-        onGenerate={handleGenerate}
-        onStop={handleStop}
-        userId={userId}
-        workspaceId={workspaceId}
-        appTitle={fileData?.title ?? workspace?.title ?? null}
-      />
-      <div className="w-px shrink-0 bg-white/6" />
+  const handleFilePatch = useCallback((patches: FileData) => {
+    setFileData(patches);
+  }, []);
 
-      {/* code panel - right   */}
-      <CodePanel
-        fileData={fileData}
-        isGenerating={isGenerating}
-        statusLog={statusLog}
-        onImprove={handleImprove}
-        onFixError={(error) =>
-          handleGenerate(
-            `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`,
-          )
-        }
-        onFilePatch={handleFilePatch}
-        appTitle={fileData?.title ?? workspace?.title ?? null}
-        isImproving={isImproving}
-        isProUser={userPlan === "pro"}
-      />
-    </div>
+  return (
+    <>
+      {/* Mobile blocker — visible only on small screens */}
+      <div className="md:hidden">
+        {/* <MobileBlocker /> */}
+      </div>
+
+      {/* Workspace — visible only on md+ screens */}
+      <div className="hidden md:flex h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0a0a0a]">
+        <ChatPanel
+          isImproving={isImproving}
+          messages={messages}
+          isGenerating={isGenerating}
+          statusLog={statusLog}
+          credits={credits}
+          initialPrompt={initialPrompt}
+          onGenerate={handleGenerate}
+          onStop={handleStop}
+          userId={userId}
+          workspaceId={workspaceId}
+          appTitle={fileData?.title ?? workspace?.title ?? null}
+        />
+        <div className="w-px shrink-0 bg-white/6" />
+        <CodePanel
+          fileData={fileData}
+          isGenerating={isGenerating}
+          statusLog={statusLog}
+          onImprove={handleImprove}
+          onFixError={(error) =>
+            handleGenerate(
+              `There is an error in the preview:\n\n\`\`\`\n${error}\n\`\`\`\n\nPlease fix it.`,
+            )
+          }
+          onFilePatch={handleFilePatch}
+          appTitle={fileData?.title ?? workspace?.title ?? null}
+          isImproving={isImproving}
+          isProUser={userPlan === "pro"}
+        />
+      </div>
+    </>
   );
 }
-
-export default WorkspaceClient;

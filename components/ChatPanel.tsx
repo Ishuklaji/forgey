@@ -10,7 +10,6 @@ import {
   Sparkles,
   Wand2,
   Square,
-  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -20,6 +19,11 @@ import type { Message, StatusStep } from "@/types/workspace";
 // import { createClient } from "@supabase/supabase-js";
 import { BlueTitle } from "./reusables";
 import Image from "next/image";
+
+// const supabase = createClient(
+//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  // process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+// );
 
 interface ChatPanelProps {
   messages: Message[];
@@ -49,7 +53,7 @@ export function ChatPanel({
   appTitle,
 }: ChatPanelProps) {
   const { user } = useUser();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -74,7 +78,7 @@ export function ChatPanel({
 
   // Auto-scroll on new messages or streaming updates
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = scrollContainerRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, isGenerating, isImproving]);
@@ -148,9 +152,10 @@ export function ChatPanel({
           </span>
         </PricingModal>
       </div>
+
       {/* Messages */}
       <div
-        ref={scrollRef}
+        ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-3 py-4 [&::-webkit-scrollbar]:hidden"
       >
         {messages.length === 0 && !isGenerating && (
@@ -162,10 +167,14 @@ export function ChatPanel({
         )}
 
         <div className="space-y-4">
-          {messages.map((msg, i) => (
-            <div key={1}>
-              {msg?.role === "user" ? (
-                <div className="flex items-start justify-end gap-2">
+          {messages.map((msg, i) => {
+            const isLast = i === messages.length - 1;
+            // This is the live-streaming assistant bubble during improve
+            const isLiveStream = isLast && isStreamingAssistant;
+
+            return (
+              <div key={i}>
+                {msg.role === "user" ? (
                   <div className="flex items-start justify-end gap-2">
                     <div className="max-w-[85%] space-y-1.5">
                       {msg.imageUrl && (
@@ -195,51 +204,51 @@ export function ChatPanel({
                       </div>
                     )}
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2">
-                  <Image
-                    src="/logo-short.jpeg"
-                    alt="Forge"
-                    width={24}
-                    height={24}
-                    className="mt-0.5 h-6 w-6 shrink-0 rounded-md"
-                  />
-                  <div className="min-w-0 rounded-2xl rounded-tl-sm bg-white/5 px-3.5 py-2.5">
-                    {isLiveStream && !msg.content ? (
-                      // Empty placeholder — show Cline thinking indicator
-                      <div className="flex items-center gap-2">
-                        <Wand2 className="h-3 w-3 shrink-0 text-blue-400/60 animate-pulse" />
-                        <span className="text-[12px] text-white/30 animate-pulse">
-                          Cline is thinking…
-                        </span>
-                      </div>
-                    ) : isLiveStream && msg.content ? (
-                      // Streaming thinking text — show raw (not markdown)
-                      // with a blinking cursor at the end
-                      <div>
-                        <div className="mb-1.5 flex items-center gap-1.5">
-                          <Wand2 className="h-3 w-3 shrink-0 text-blue-400/60" />
-                          <span className="text-[10px] font-medium uppercase tracking-wider text-blue-400/50">
-                            Agent reasoning
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <Image
+                      src="/logo-short.jpeg"
+                      alt="Forge"
+                      width={24}
+                      height={24}
+                      className="mt-0.5 h-6 w-6 shrink-0 rounded-md"
+                    />
+                    <div className="min-w-0 rounded-2xl rounded-tl-sm bg-white/5 px-3.5 py-2.5">
+                      {isLiveStream && !msg.content ? (
+                        // Empty placeholder — show Cline thinking indicator
+                        <div className="flex items-center gap-2">
+                          <Wand2 className="h-3 w-3 shrink-0 text-blue-400/60 animate-pulse" />
+                          <span className="text-[12px] text-white/30 animate-pulse">
+                            Cline is thinking…
                           </span>
                         </div>
-                        <p className="text-[12px] leading-relaxed text-white/35 wrap-break-word">
-                          {msg.content}
-                          <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_1s_ease-in-out_infinite] bg-blue-400/60 align-middle" />
-                        </p>
-                      </div>
-                    ) : (
-                      // Normal completed assistant message
-                      <div className="prose prose-sm prose-invert max-w-none wrap-break-word text-[13px] leading-relaxed text-white/70 [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-blue-300/80 [&_code]:text-xs [&_code]:break-all [&_li]:my-0.5 [&_p]:my-1 [&_pre]:overflow-x-auto! [&_pre]:whitespace-pre-wrap! [&_ul]:my-1">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
-                    )}
+                      ) : isLiveStream && msg.content ? (
+                        // Streaming thinking text — show raw (not markdown)
+                        // with a blinking cursor at the end
+                        <div>
+                          <div className="mb-1.5 flex items-center gap-1.5">
+                            <Wand2 className="h-3 w-3 shrink-0 text-blue-400/60" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-blue-400/50">
+                              Agent reasoning
+                            </span>
+                          </div>
+                          <p className="text-[12px] leading-relaxed text-white/35 wrap-break-word">
+                            {msg.content}
+                            <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_1s_ease-in-out_infinite] bg-blue-400/60 align-middle" />
+                          </p>
+                        </div>
+                      ) : (
+                        // Normal completed assistant message
+                        <div className="prose prose-sm prose-invert max-w-none wrap-break-word text-[13px] leading-relaxed text-white/70 [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-blue-300/80 [&_code]:text-xs [&_code]:break-all [&_li]:my-0.5 [&_p]:my-1 [&_pre]:overflow-x-auto! [&_pre]:whitespace-pre-wrap! [&_ul]:my-1">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
 
           {/* Live status steps — only shown during normal generation */}
           {isGenerating && (
@@ -259,7 +268,19 @@ export function ChatPanel({
                         {step.status === "running" ? (
                           <Loader2 className="h-3 w-3 animate-spin text-blue-400/80" />
                         ) : (
-                          <Check className="h-3 w-3 text-white/25" />
+                          <svg
+                            className="h-3 w-3 text-white/25"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                          >
+                            <path
+                              d="M2 6l3 3 5-5"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
                         )}
                       </div>
                       <span
@@ -280,6 +301,7 @@ export function ChatPanel({
           )}
         </div>
       </div>
+
       {/* No-credits upgrade banner */}
       {noCredits && (
         <div className="mx-3 mb-2 rounded-xl border border-red-500/15 bg-red-950/40 px-4 py-3">
@@ -313,6 +335,7 @@ export function ChatPanel({
             </button>
           </div>
         )}
+
         <div
           className={cn(
             "rounded-xl border bg-white/4 transition-colors",
@@ -342,6 +365,7 @@ export function ChatPanel({
             className="w-full resize-none bg-transparent px-3.5 pb-2 pt-3 text-[13px] text-white/80 placeholder:text-white/20 focus:outline-none"
             style={{ maxHeight: 160 }}
           />
+
           <div className="flex items-center justify-between px-2 pb-2">
             <Button
               variant="ghost"
@@ -367,7 +391,13 @@ export function ChatPanel({
 
             {/* Stop button — shown while generating or improving */}
             {isGenerating || isImproving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Button
+                size="icon"
+                onClick={onStop}
+                className="h-7 w-7 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 hover:text-white active:scale-95 transition-all"
+              >
+                <Square className="h-3 w-3 fill-current" />
+              </Button>
             ) : (
               <Button
                 size="icon"
@@ -385,6 +415,7 @@ export function ChatPanel({
             )}
           </div>
         </div>
+
         <p className="mt-1.5 text-center text-[10px] text-white/15">
           {isGenerating || isImproving
             ? "Click ■ to stop generation"
@@ -394,5 +425,3 @@ export function ChatPanel({
     </div>
   );
 }
-
-export default ChatPanel;

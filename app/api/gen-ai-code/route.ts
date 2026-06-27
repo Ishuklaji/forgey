@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import { db } from "@/lib/prisma";
 import { CREDIT_COST_PER_GENERATION } from "@/lib/constants";
 import type { Message, FileData } from "@/types/workspace";
-// import { aj } from "@/lib/arcjet";
+import { aj } from "@/lib/arcjet";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -14,12 +14,12 @@ function sseEvent(type: string, payload: unknown): string {
   return `data: ${JSON.stringify({ type, ...(payload as object) })}\n\n`;
 }
 
-// ─── Extract short label from a Gemini Ai thought chunk ─────────────────────────
+// ─── Extract short label from a Gemini thought chunk ─────────────────────────
 // Gemini thoughts often start with a bold heading like **Verify Config**
 // We extract that. If no bold heading, take the first sentence only.
 
 function extractThoughtLabel(text: string): string | null {
-  // Try to grab **bold heading** at the starting
+  // Try to grab **bold heading** at the start
   const boldMatch = text.match(/\*\*([^*]{4,60})\*\*/);
   if (boldMatch) return boldMatch[1].trim();
 
@@ -140,29 +140,30 @@ export async function POST(request: NextRequest) {
   // ── Arcjet: rate limit, prompt injection, sensitive info ──────────────────
   // detectPromptInjectionMessage requires the actual user text to inspect.
 
-  // const arcjetReq = new Request(request.url, {
-  //   method: request.method,
-  //   headers: request.headers,
-  //   body: JSON.stringify(body),
-  // });
+  const arcjetReq = new Request(request.url, {
+    method: request.method,
+    headers: request.headers,
+    body: JSON.stringify(body),
+  });
 
-  // const lastUserMessage =
-  //   [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-  // const decision = await aj.protect(arcjetReq, {
-  //   requested: 1,
-  //   userId: clerkId,
-  //   detectPromptInjectionMessage: lastUserMessage,
-  // });
+  const lastUserMessage =
+    [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  const decision = await aj.protect(arcjetReq, {
+    requested: 1,
+    userId: clerkId,
+    detectPromptInjectionMessage: lastUserMessage,
+  });
 
-  // if (decision.isDenied()) {
-  //   return Response.json(
-  //     { message: decision.reason?.type ?? "Request blocked" },
-  //     { status: 429 }
-  //   );
-  // }
+  if (decision.isDenied()) {
+    return Response.json(
+      { message: decision.reason?.type ?? "Request blocked" },
+      { status: 429 },
+    );
+  }
+  // until here
 
   const user = await db.user.findUnique({
-    where: { clerkId },
+    where: { id: userId, clerkId },
     select: { id: true, credits: true },
   });
 
@@ -219,114 +220,107 @@ export async function POST(request: NextRequest) {
               accumulated += part.text;
             }
           }
+        }
 
-          // ── Parse the complete JSON response ──────────────────────────────────
+        // ── Parse the complete JSON response ──────────────────────────────────
 
-          let parsed: {
-            assistantMessage: string;
-            title?: string;
-            files: Record<string, { code: string }>;
-            dependencies: Record<string, string>;
-          };
+        let parsed: {
+          assistantMessage: string;
+          title?: string;
+          files: Record<string, { code: string }>;
+          dependencies: Record<string, string>;
+        };
 
-          try {
-            parsed = JSON.parse(accumulated);
-          } catch {
-            enqueue(
-              sseEvent("error", {
-                message: "AI returned invalid JSON. Please try again.",
-              }),
-            );
-            controller.close();
-            return;
-          }
-
-          const {
-            assistantMessage,
-            title: aiTitle,
-            files,
-            dependencies,
-          } = parsed;
-
-          if (!files || typeof files !== "object") {
-            enqueue(
-              sseEvent("error", {
-                message: "AI response missing files. Please try again.",
-              }),
-            );
-            controller.close();
-            return;
-          }
-
-          // ── Validate npm packages ──────────────────────────────────────────────
-
-          enqueue(sseEvent("status", { message: "Validating packages…" }));
-          const validatedDeps = await validateDependencies(dependencies ?? {});
-          const newFileData: FileData = {
-            files,
-            dependencies: validatedDeps,
-            title: aiTitle,
-          };
-
-          // ── Upsert workspace + deduct credit (single transaction) ──────────────
-
-          enqueue(sseEvent("status", { message: "Saving…" }));
-
-          const lastUserMessage = messages[messages.length - 1];
-          const updatedMessages: Message[] = [
-            ...messages,
-            { role: "assistant", content: assistantMessage },
-          ];
-
-          const workspace = await db.$transaction(
-            async (tx) => {
-              const workspace = workspaceId
-                ? await tx.workspace.update({
-                    where: { id: workspaceId, userId },
-                    data: {
-                      messages: updatedMessages as never,
-                      fileData: newFileData as never,
-                    },
-                  })
-                : await tx.workspace.create({
-                    data: {
-                      userId,
-                      title: aiTitle ?? lastUserMessage.content.slice(0, 80),
-                      messages: updatedMessages as never,
-                      fileData: newFileData as never,
-                    },
-                  });
-
-              await tx.user.update({
-                where: { id: userId },
-                data: { credits: { decrement: CREDIT_COST_PER_GENERATION } },
-              });
-
-              return workspace;
-            },
-            { timeout: 200000 },
-          );
-
-          const updatedUser = await db.user.findUnique({
-            where: { id: userId },
-            select: { credits: true },
-          });
-
-          // ── Emit final result ──────────────────────────────────────────────────
-
+        try {
+          parsed = JSON.parse(accumulated);
+        } catch {
           enqueue(
-            sseEvent("done", {
-              workspaceId: workspace.id,
-              assistantMessage,
-              fileData: newFileData,
-              creditsRemaining:
-                updatedUser?.credits ??
-                user.credits - CREDIT_COST_PER_GENERATION,
+            sseEvent("error", {
+              message: "AI returned invalid JSON. Please try again.",
             }),
           );
+          controller.close();
+          return;
         }
-      } catch (error) {
-        console.error("[gen-ai-code] stream error:", error);
+
+        const {
+          assistantMessage,
+          title: aiTitle,
+          files,
+          dependencies,
+        } = parsed;
+
+        if (!files || typeof files !== "object") {
+          enqueue(
+            sseEvent("error", {
+              message: "AI response missing files. Please try again.",
+            }),
+          );
+          controller.close();
+          return;
+        }
+
+        // ── Validate npm packages ──────────────────────────────────────────────
+
+        enqueue(sseEvent("status", { message: "Validating packages…" }));
+        const validatedDeps = await validateDependencies(dependencies ?? {});
+        const newFileData: FileData = {
+          files,
+          dependencies: validatedDeps,
+          title: aiTitle,
+        };
+
+        // ── Upsert workspace + deduct credit (single transaction) ──────────────
+
+        enqueue(sseEvent("status", { message: "Saving…" }));
+
+        const lastUserMessage = messages[messages.length - 1];
+        const updatedMessages: Message[] = [
+          ...messages,
+          { role: "assistant", content: assistantMessage },
+        ];
+
+        const [workspace] = await db.$transaction([
+          workspaceId
+            ? db.workspace.update({
+                where: { id: workspaceId, userId },
+                data: {
+                  messages: updatedMessages as never,
+                  fileData: newFileData as never,
+                },
+              })
+            : db.workspace.create({
+                data: {
+                  userId,
+                  title: aiTitle ?? lastUserMessage.content.slice(0, 80),
+                  messages: updatedMessages as never,
+                  fileData: newFileData as never,
+                },
+              }),
+          db.user.update({
+            where: { id: userId },
+            data: { credits: { decrement: CREDIT_COST_PER_GENERATION } },
+          }),
+        ]);
+
+        const updatedUser = await db.user.findUnique({
+          where: { id: userId },
+          select: { credits: true },
+        });
+
+        // ── Emit final result ──────────────────────────────────────────────────
+
+        enqueue(
+          sseEvent("done", {
+            workspaceId: workspace.id,
+            assistantMessage,
+            fileData: newFileData,
+            creditsRemaining:
+              updatedUser?.credits ?? user.credits - CREDIT_COST_PER_GENERATION,
+          }),
+        );
+      } catch (err) {
+        console.error("[gen-ai-code] stream error:", err);
         enqueue(
           sseEvent("error", {
             message: "Something went wrong. Please try again.",

@@ -36,10 +36,8 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      {" "}
       <html lang="en" suppressHydrationWarning>
         <body className={`${lora.variable} ${dmSans.variable} font-sans`}>
-          {" "}
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
