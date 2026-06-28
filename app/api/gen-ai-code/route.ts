@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ message: "No messages provided" }, { status: 400 });
   }
 
-  // ── Arcjet: rate limit, prompt injection, sensitive info ──────────────────
+  // ── Arcjet: rate limit, ai prompt injection, sensitive info ──────────────────
   // detectPromptInjectionMessage requires the actual user text to inspect.
 
   const arcjetReq = new Request(request.url, {
