@@ -16,14 +16,14 @@ import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { PricingModal } from "@/components/PricingModal";
 import type { Message, StatusStep } from "@/types/workspace";
-// import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { BlueTitle } from "./reusables";
 import Image from "next/image";
 
-// const supabase = createClient(
-//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  // process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-// );
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
 
 interface ChatPanelProps {
   messages: Message[];
