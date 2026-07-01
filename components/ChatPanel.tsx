@@ -19,6 +19,7 @@ import type { Message, StatusStep } from "@/types/workspace";
 import { createClient } from "@supabase/supabase-js";
 import { BlueTitle } from "./reusables";
 import Image from "next/image";
+import { toast } from "sonner";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -121,8 +122,8 @@ export function ChatPanel({
         .from("workspace-images")
         .getPublicUrl(path);
       setPendingImageUrl(data.publicUrl);
-    } catch {
-      // silent
+    } catch (error) {
+      toast.error((error as Error).message ?? "Failed to upload image");
     } finally {
       setIsUploading(false);
       if (fileRef.current) fileRef.current.value = "";
