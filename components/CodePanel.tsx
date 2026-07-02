@@ -22,7 +22,7 @@ import {
   ArrowUp,
 } from "lucide-react";
 import { RingLoader } from "react-spinners";
-// import JSZip from "jszip";
+import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PricingModal } from "@/components/PricingModal";
@@ -204,7 +204,7 @@ function SandpackInner({
       const zip = new JSZip();
 
       const packageJson = {
-        name: "forge-app",
+        name: "forgey-app",
         version: "1.0.0",
         private: true,
         dependencies: {
@@ -231,7 +231,7 @@ function SandpackInner({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Forge App</title>
+    <title>Forgey App</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
@@ -263,7 +263,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`,
 
       zip.file(
         "README.md",
-        `# Forge App\n\nGenerated with [Forge](https://forge.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``,
+        `# Forgey App\n\nGenerated with [Forgey](https://forgey.app).\n\n## Getting started\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``,
       );
 
       const blob = await zip.generateAsync({ type: "blob" });
@@ -275,7 +275,7 @@ root.render(<React.StrictMode><App /></React.StrictMode>);`,
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-|-$/g, "")}.zip`
-        : "forge-app.zip";
+        : "forgey-app.zip";
       a.download = zipName;
       a.click();
       URL.revokeObjectURL(url);
