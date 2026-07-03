@@ -3,7 +3,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
-import { checkUser } from "@/lib/checkUser";
 import type { WorkspaceUser, WorkspaceData } from "@/types/workspace";
 
 export type { WorkspaceUser, WorkspaceData } from "@/types/workspace";
@@ -14,14 +13,14 @@ export async function getWorkspaceUser(): Promise<WorkspaceUser> {
   const { userId: clerkId } = await auth();
   if (!clerkId) redirect("/");
 
-  const user = await checkUser();
+  const user = await db.user.findUnique({
+    where: { clerkId },
+    select: { id: true, credits: true, plan: true },
+  });
+
   if (!user) redirect("/");
 
-  return {
-    id: user.id,
-    credits: user.credits,
-    plan: user.plan,
-  };
+  return user;
 }
 
 // ─── Get a workspace by id (must belong to the current user) ─────────────────
@@ -30,7 +29,7 @@ export async function getWorkspaceById(
   workspaceId: string,
   userId: string,
 ): Promise<WorkspaceData> {
-  const workspace = await db.workspace.findFirst({
+  const workspace = await db.workspace.findUnique({
     where: { id: workspaceId, userId },
     select: {
       id: true,

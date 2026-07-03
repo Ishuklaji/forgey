@@ -163,27 +163,14 @@ export async function POST(request: NextRequest) {
   // until here
 
   const user = await db.user.findUnique({
-    where: { clerkId },
+    where: { id: userId, clerkId },
     select: { id: true, credits: true },
   });
 
   if (!user)
     return Response.json({ message: "User not found" }, { status: 404 });
-  if (user.id !== userId)
-    return Response.json({ message: "User mismatch" }, { status: 403 });
   if (user.credits < CREDIT_COST_PER_GENERATION) {
     return Response.json({ message: "Insufficient credits" }, { status: 402 });
-  }
-
-  if (workspaceId) {
-    const workspace = await db.workspace.findFirst({
-      where: { id: workspaceId, userId: user.id },
-      select: { id: true },
-    });
-
-    if (!workspace) {
-      return Response.json({ message: "Workspace not found" }, { status: 404 });
-    }
   }
 
   const encoder = new TextEncoder();
@@ -296,7 +283,7 @@ export async function POST(request: NextRequest) {
         const [workspace] = await db.$transaction([
           workspaceId
             ? db.workspace.update({
-                where: { id: workspaceId },
+                where: { id: workspaceId, userId },
                 data: {
                   messages: updatedMessages as never,
                   fileData: newFileData as never,
@@ -304,20 +291,20 @@ export async function POST(request: NextRequest) {
               })
             : db.workspace.create({
                 data: {
-                  userId: user.id,
+                  userId,
                   title: aiTitle ?? lastUserMessage.content.slice(0, 80),
                   messages: updatedMessages as never,
                   fileData: newFileData as never,
                 },
               }),
           db.user.update({
-            where: { id: user.id },
+            where: { id: userId },
             data: { credits: { decrement: CREDIT_COST_PER_GENERATION } },
           }),
         ]);
 
         const updatedUser = await db.user.findUnique({
-          where: { id: user.id },
+          where: { id: userId },
           select: { credits: true },
         });
 
