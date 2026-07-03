@@ -30,12 +30,22 @@ export async function POST(request: NextRequest) {
   // ── Auth + credit check ────────────────────────────────────────────────────
 
   const user = await db.user.findUnique({
-    where: { id: userId, clerkId },
+    where: { clerkId },
     select: { id: true, credits: true, plan: true },
   });
 
   if (!user)
     return Response.json({ message: "User not found" }, { status: 404 });
+  if (user.id !== userId)
+    return Response.json({ message: "User mismatch" }, { status: 403 });
+
+  const workspace = await db.workspace.findFirst({
+    where: { id: workspaceId, userId: user.id },
+    select: { id: true },
+  });
+
+  if (!workspace)
+    return Response.json({ message: "Workspace not found" }, { status: 404 });
 
   // Pro-only gate
   if (user.plan !== "pro")
@@ -193,17 +203,17 @@ RULES:
 
         await db.$transaction([
           db.workspace.update({
-            where: { id: workspaceId, userId },
+            where: { id: workspaceId },
             data: { fileData: newFileData as never },
           }),
           db.user.update({
-            where: { id: userId },
+            where: { id: user.id },
             data: { credits: { decrement: CREDIT_COST_PER_GENERATION } },
           }),
         ]);
 
         const updatedUser = await db.user.findUnique({
-          where: { id: userId },
+          where: { id: user.id },
           select: { credits: true },
         });
 
