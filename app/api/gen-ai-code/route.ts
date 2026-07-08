@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
   //     { status: 429 },
   //   );
   // }
-  // until here
+  // until here is arcjet
 
   const user = await db.user.findUnique({
     where: { id: userId, clerkId },
