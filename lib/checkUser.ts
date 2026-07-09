@@ -1,5 +1,4 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { unstable_rethrow } from "next/navigation";
 import { PLANS } from "./constants";
 import { db } from "./prisma";
 import { Plan } from "@/types/plans";
@@ -12,10 +11,10 @@ const getCurrentPlan = async (): Promise<Plan> => {
 };
 
 export const checkUser = async () => {
-  try {
-    const user = await currentUser();
-    if (!user) return null;
+  const user = await currentUser();
+  if (!user) return null;
 
+  try {
     const currentPlan = await getCurrentPlan();
 
     const existing = await db.user.findUnique({
@@ -61,7 +60,6 @@ export const checkUser = async () => {
       },
     });
   } catch (error) {
-    unstable_rethrow(error);
     console.error("checkUser error:", error);
     return null;
   }
