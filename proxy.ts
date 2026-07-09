@@ -6,27 +6,36 @@ const isProtectedRoute = createRouteMatcher([
   "/workspace(.*)",
   "/projects(.*)",
 ]);
+const isApiRoute = createRouteMatcher(["/api(.*)", "/trpc(.*)"]);
 
 // ─── Global Arcjet client ─────────────────────────────────────────────────────
 // Runs on every request. Looser than the route-level client — allows search
 // engines and link previews so the landing page gets indexed and
 // Slack/Twitter unfurls work.
 
-const aj = arcjet({
-  key: process.env.ARCJET_KEY!,
-  rules: [
-    shield({ mode: "LIVE" }),
-    detectBot({
-      mode: "LIVE",
-      allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"],
-    }),
-  ],
-});
+const aj = process.env.ARCJET_KEY
+  ? arcjet({
+      key: process.env.ARCJET_KEY,
+      rules: [
+        shield({ mode: "LIVE" }),
+        detectBot({
+          mode: "LIVE",
+          allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"],
+        }),
+      ],
+    })
+  : null;
 
 export default clerkMiddleware(async (auth, req) => {
-  const decision = await aj.protect(req);
-  if (decision.isDenied()) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (aj && isApiRoute(req)) {
+    try {
+      const decision = await aj.protect(req);
+      if (decision.isDenied()) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } catch (error) {
+      console.error("Arcjet proxy error:", error);
+    }
   }
 
   // Clerk auth guard — redirect unauthenticated users away from /workspace
