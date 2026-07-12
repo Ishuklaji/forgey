@@ -6,7 +6,7 @@ import arcjet, {
 
 // Route-level Arcjet client for /api/gen-ai-code only.
 // shield + detectBot handled globally in proxy.ts,
-// Characteristics: "userId" means each Clerk user gets their own token bucket,
+// Characteristics: "userId" means each Clerk registered user gets their own token bucket,
 // so corporate offices / VPNs sharing an IP don't share rate limits.
 
 export const aj = arcjet({
