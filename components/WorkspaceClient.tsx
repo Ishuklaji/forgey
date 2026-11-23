@@ -142,6 +142,7 @@ export function WorkspaceClient({
         });
 
         if (res.status === 402) {
+          toast.error("Not enough credits.");
           setMessages((prev) => prev.slice(0, -1));
           return;
         }
@@ -150,11 +151,15 @@ export function WorkspaceClient({
           setMessages((prev) => prev.slice(0, -1));
           return;
         }
-        if (!res.ok || !res.body) throw new Error("Generation failed");
+        if (!res.ok || !res.body) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.message ?? body?.error ?? "Generation failed");
+        }
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
+        let finished = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -166,11 +171,19 @@ export function WorkspaceClient({
 
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
+            // Parse errors are skipped, but "error" events must propagate
+            // to the outer catch so the user actually sees the failure.
+            let event;
             try {
-              const event = JSON.parse(line.slice(6));
+              event = JSON.parse(line.slice(6));
+            } catch {
+              continue; // skip malformed SSE lines
+            }
+            {
               if (event.type === "status") {
                 pushStep(event.message);
               } else if (event.type === "done") {
+                finished = true;
                 completeSteps();
                 setWorkspaceId(event.workspaceId);
                 setFileData(event.fileData);
@@ -187,10 +200,13 @@ export function WorkspaceClient({
               } else if (event.type === "error") {
                 throw new Error(event.message);
               }
-            } catch {
-              // skip malformed SSE lines
             }
           }
+        }
+
+        // Stream closed without a result (e.g. serverless timeout)
+        if (!finished) {
+          throw new Error("Generation was interrupted. Please try again.");
         }
       } catch (err) {
         // User-initiated stop — silently roll back the user message
@@ -283,8 +299,15 @@ export function WorkspaceClient({
 
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
+            // Parse errors are skipped, but "error" events must propagate
+            // to the outer catch so the user actually sees the failure.
+            let event;
             try {
-              const event = JSON.parse(line.slice(6));
+              event = JSON.parse(line.slice(6));
+            } catch {
+              continue; // skip malformed SSE lines
+            }
+            {
 
               if (event.type === "thinking") {
                 // Stream agent reasoning into the placeholder assistant message
@@ -316,8 +339,6 @@ export function WorkspaceClient({
               } else if (event.type === "error") {
                 throw new Error(event.message);
               }
-            } catch {
-              // skip malformed SSE lines
             }
           }
         }

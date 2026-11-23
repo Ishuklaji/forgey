@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/prisma";
+import { checkUser } from "@/lib/checkUser";
 import type { WorkspaceUser, WorkspaceData } from "@/types/workspace";
 
 export type { WorkspaceUser, WorkspaceData } from "@/types/workspace";
@@ -18,9 +19,14 @@ export async function getWorkspaceUser(): Promise<WorkspaceUser> {
     select: { id: true, credits: true, plan: true },
   });
 
-  if (!user) redirect("/");
+  if (user) return user;
 
-  return user;
+  // First visit: the DB row may not exist yet (Header's checkUser runs in
+  // parallel). Create/sync it here instead of bouncing the user home.
+  const synced = await checkUser();
+  if (!synced) redirect("/");
+
+  return { id: synced.id, credits: synced.credits, plan: synced.plan };
 }
 
 // ─── Get a workspace by id (must belong to the current user) ─────────────────

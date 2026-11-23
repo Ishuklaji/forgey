@@ -60,6 +60,12 @@ export const checkUser = async () => {
       },
     });
   } catch (error) {
+    // A concurrent request may have created the user first (unique clerkId)
+    const existing = await db.user
+      .findUnique({ where: { clerkId: user.id } })
+      .catch(() => null);
+    if (existing) return existing;
+
     console.error("checkUser error:", error);
     return null;
   }
