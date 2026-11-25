@@ -28,6 +28,25 @@ Forgey turns a single natural-language prompt into a working React + Tailwind ap
 3. **Preview & refine** — the app renders live; keep chatting to iterate, with the AI retaining full conversation context.
 4. **Export & deploy** — open the project in CodeSandbox, copy the source, or deploy it to a live URL.
 
+## How to use
+
+1. **Sign in** — open [forgey.vercel.app](https://forgey.vercel.app) and click **Sign in** (new accounts get 10 free credits).
+2. **Describe your app** — type what you want in the big box on the home page, for example *"A pomodoro timer with tasks"*, or click one of the suggestions. Press **Enter** or **Generate**.
+3. **Wait for it to build** — the chat shows what the AI is doing ("Writing code…"). A generation usually takes about a minute and uses **1 credit**.
+4. **Try your app** — it runs live in the **Preview** tab. Switch to the **Code** tab to see and edit every file.
+5. **Change it** — type follow-up requests in the chat on the left, like *"make it dark mode"* or *"add a reset button"*. Each change uses 1 credit.
+6. **Use a design as a reference** — click the 📎 paperclip in the chat to attach a screenshot or mockup, and the AI will match its look.
+7. **Fix errors** — if the preview shows an error banner, click it and the AI will try to fix the code.
+8. **Improve with Agent** *(Starter/Pro)* — for bigger changes, click **Improve with Agent** above the preview.
+9. **Download your code** — click **Download** to get the whole project as a `.zip`.
+10. **Come back later** — open **Projects** in the top bar to reopen or delete any app you've built.
+
+### Tips
+
+- Be specific in your prompt: name the features, colours, and layout you want.
+- Your remaining credits are shown in the top bar. Upgrade from the pricing section when you run out.
+- If something fails, you'll see an error message and no credit is used — just try again.
+
 ## Tech stack
 
 | Layer | Technology |
