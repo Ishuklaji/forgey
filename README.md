@@ -28,6 +28,24 @@ Forgey turns a single natural-language prompt into a working React + Tailwind ap
 3. **Preview & refine** — the app renders live; keep chatting to iterate, with the AI retaining full conversation context.
 4. **Export & deploy** — open the project in CodeSandbox, copy the source, or deploy it to a live URL.
 
+## Uses
+
+- **Turn an idea into a working app** — describe it in one sentence and get a running React app.
+- **Prototype quickly** — test a UI idea or a product concept in minutes before investing real development time.
+- **Recreate a design** — attach a screenshot or mockup and get code that matches it.
+- **Learn React and Tailwind** — read and edit the generated code to see how a real app is put together.
+- **Kick-start a project** — download the code as a `.zip` and keep building on it in your own editor.
+- **Build small tools** — timers, trackers, dashboards, calculators and other single-page apps for personal use.
+
+## Benefits
+
+- **No setup** — nothing to install; code is written, bundled and previewed right in the browser.
+- **Fast feedback** — see your app running live, then ask for changes in plain English and watch it update.
+- **You own the code** — every file is visible, editable and downloadable; nothing is locked in.
+- **Fewer broken builds** — npm packages are checked against the registry, and preview errors can be sent back to the AI to fix.
+- **Pick up where you left off** — each app is saved as a project with its full chat history.
+- **Fair usage** — one credit per generation, 10 free credits to start, and no credit used if a generation fails.
+
 ## How to use
 
 1. **Sign in** — open [forgey.vercel.app](https://forgey.vercel.app) and click **Sign in** (new accounts get 10 free credits).
